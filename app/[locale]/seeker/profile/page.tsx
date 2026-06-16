@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useParams, useRouter } from "next/navigation";
-import Image from "next/image";
 import { Star, MapPin, Clock, Wrench, Pencil, LogOut } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import BottomNav from "@/components/ui/BottomNav";
@@ -52,7 +51,7 @@ export default function SeekerProfilePage() {
           <div className="flex items-center gap-4">
             <div className="relative h-16 w-16 rounded-2xl overflow-hidden shrink-0" style={{ border: "2px solid rgba(56,189,248,0.4)" }}>
               {profile.photo_url
-                ? <Image src={profile.photo_url} alt={profile.name} fill className="object-cover" />
+                ? <img src={profile.photo_url} alt={profile.name} className="h-full w-full object-cover" />
                 : <div className="flex h-full w-full items-center justify-center text-2xl font-black text-white" style={{ background: "linear-gradient(135deg, #0ea5e9, #0369a1)" }}>{profile.name[0]}</div>
               }
             </div>
