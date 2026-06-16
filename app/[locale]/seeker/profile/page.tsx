@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
-import { Star, MapPin, Clock, Wrench } from "lucide-react";
+import { Star, MapPin, Clock, Wrench, Pencil } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import BottomNav from "@/components/ui/BottomNav";
 import ProfileScoreBadge from "@/components/ui/ProfileScoreBadge";
@@ -16,6 +16,7 @@ export default function SeekerProfilePage() {
   const t = useTranslations("nav");
   const tOnboard = useTranslations("onboarding");
   const { locale } = useParams<{ locale: string }>();
+  const router = useRouter();
   const [profile, setProfile] = useState<SeekerProfile | null>(null);
 
   useEffect(() => {
@@ -33,7 +34,14 @@ export default function SeekerProfilePage() {
     <div className="min-h-screen pb-24" style={{ background: BG }}>
       {/* Header */}
       <div className="px-5 pt-12 pb-6" style={{ background: "rgba(15,23,42,0.8)", backdropFilter: "blur(20px)", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
-        <h1 className="text-xl font-black text-white mb-4">{t("profile")}</h1>
+        <div className="flex items-center justify-between mb-4">
+          <h1 className="text-xl font-black text-white">{t("profile")}</h1>
+          <button onClick={() => router.push(`/${locale}/seeker/edit-profile`)}
+            className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full"
+            style={{ background: "rgba(56,189,248,0.15)", border: "1px solid rgba(56,189,248,0.3)", color: "#38bdf8" }}>
+            <Pencil size={12} /> แก้ไข
+          </button>
+        </div>
         {profile && (
           <div className="flex items-center gap-4">
             <div className="relative h-16 w-16 rounded-2xl overflow-hidden shrink-0" style={{ border: "2px solid rgba(56,189,248,0.4)" }}>

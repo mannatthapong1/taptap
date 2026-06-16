@@ -3,54 +3,50 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter, useParams } from "next/navigation";
-import { MapPin, Navigation, ChevronLeft, CheckCircle } from "lucide-react";
+import { MapPin, ChevronLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { calcProfileScore } from "@/lib/profileScore";
 import ProfileScoreBadge from "@/components/ui/ProfileScoreBadge";
 
 const BG = "linear-gradient(135deg, #0f172a 0%, #1e3a5f 60%, #0369a1 100%)";
 
+const PROVINCES = [
+  "กรุงเทพมหานคร","กระบี่","กาญจนบุรี","กาฬสินธุ์","กำแพงเพชร","ขอนแก่น","จันทบุรี","ฉะเชิงเทรา",
+  "ชลบุรี","ชัยนาท","ชัยภูมิ","ชุมพร","เชียงราย","เชียงใหม่","ตรัง","ตราด","ตาก","นครนายก",
+  "นครปฐม","นครพนม","นครราชสีมา","นครศรีธรรมราช","นครสวรรค์","นนทบุรี","นราธิวาส","น่าน",
+  "บึงกาฬ","บุรีรัมย์","ปทุมธานี","ประจวบคีรีขันธ์","ปราจีนบุรี","ปัตตานี","พระนครศรีอยุธยา",
+  "พะเยา","พังงา","พัทลุง","พิจิตร","พิษณุโลก","เพชรบุรี","เพชรบูรณ์","แพร่","ภูเก็ต",
+  "มหาสารคาม","มุกดาหาร","แม่ฮ่องสอน","ยโสธร","ยะลา","ร้อยเอ็ด","ระนอง","ระยอง","ราชบุรี",
+  "ลพบุรี","ลำปาง","ลำพูน","เลย","ศรีสะเกษ","สกลนคร","สงขลา","สตูล","สมุทรปราการ",
+  "สมุทรสงคราม","สมุทรสาคร","สระแก้ว","สระบุรี","สิงห์บุรี","สุโขทัย","สุพรรณบุรี","สุราษฎร์ธานี",
+  "สุรินทร์","หนองคาย","หนองบัวลำภู","อ่างทอง","อำนาจเจริญ","อุดรธานี","อุตรดิตถ์","อุทัยธานี","อุบลราชธานี",
+];
+
 export default function Step4Page() {
   const t = useTranslations("onboarding");
   const { locale } = useParams<{ locale: string }>();
   const router = useRouter();
-  const [locationText, setLocationText] = useState("");
-  const [lat, setLat] = useState<number | null>(null);
-  const [lng, setLng] = useState<number | null>(null);
-  const [gpsLoading, setGpsLoading] = useState(false);
-  const [gpsError, setGpsError] = useState("");
+  const [province, setProvince] = useState("");
   const [loading, setLoading] = useState(false);
-  const score = calcProfileScore({ name: "x", photo_url: "x", skills: ["x","x","x"], availability: [{}] as never, location_text: locationText });
-
-  function useGPS() {
-    setGpsLoading(true);
-    setGpsError("");
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setLat(pos.coords.latitude);
-        setLng(pos.coords.longitude);
-        setLocationText(`${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}`);
-        setGpsLoading(false);
-      },
-      () => { setGpsError(t("step4.gps_error")); setGpsLoading(false); }
-    );
-  }
+  const score = calcProfileScore({ name: "x", photo_url: "x", skills: ["x","x","x"], availability: [{}] as never, location_text: province });
 
   async function handleFinish() {
-    if (!locationText.trim()) return;
+    if (!province) return;
     setLoading(true);
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
     await supabase.from("seeker_profiles").upsert({
-      user_id: user.id, location_text: locationText, lat, lng,
-      profile_score: calcProfileScore({ name: "x", photo_url: "x", skills: ["x","x","x"], availability: [{}] as never, location_text: locationText }),
+      user_id: user.id,
+      location_text: province,
+      profile_score: score,
     }, { onConflict: "user_id" });
     router.push(`/${locale}/seeker/home`);
   }
 
   return (
     <div className="min-h-screen flex flex-col px-5 pt-10 pb-8 max-w-md mx-auto" style={{ background: BG }}>
+      {/* Progress */}
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-2">
           {[1,2,3,4].map(i => (
@@ -63,29 +59,22 @@ export default function Step4Page() {
       <div className="mb-8">
         <p className="text-xs font-semibold text-blue-300 uppercase tracking-widest mb-1">ขั้นตอน 4 จาก 4</p>
         <h1 className="text-2xl font-black text-white">{t("step4.title")}</h1>
-        <p className="text-sm text-blue-200 mt-1">{t("step4.subtitle")}</p>
+        <p className="text-sm text-blue-200 mt-1">เลือกจังหวัดที่ต้องการหางาน</p>
       </div>
 
-      {/* GPS Button */}
-      <button onClick={useGPS} disabled={gpsLoading}
-        className="flex items-center justify-center gap-2 w-full rounded-2xl py-4 font-semibold mb-4 transition-all disabled:opacity-60"
-        style={{ background: lat ? "rgba(56,189,248,0.15)" : "rgba(255,255,255,0.08)", border: `2px solid ${lat ? "#38bdf8" : "rgba(255,255,255,0.2)"}`, color: lat ? "#38bdf8" : "#93c5fd" }}>
-        {lat ? <CheckCircle size={18} /> : <Navigation size={18} />}
-        {gpsLoading ? t("step4.gps_loading") : lat ? "ตำแหน่งถูกบันทึกแล้ว" : t("step4.use_gps")}
-      </button>
-
-      {gpsError && <p className="text-xs text-red-400 mb-3 text-center">{gpsError}</p>}
-
       <div className="mb-auto">
-        <label className="block text-sm font-semibold text-blue-100 mb-2">{t("step4.manual_label")}</label>
-        <div className="flex items-center gap-2 rounded-2xl px-4 py-4" style={{ background: "rgba(255,255,255,0.08)", border: "1.5px solid rgba(56,189,248,0.3)" }}>
+        <label className="block text-sm font-semibold text-blue-100 mb-2">จังหวัด</label>
+        <div className="flex items-center gap-2 rounded-2xl px-4 py-1" style={{ background: "rgba(255,255,255,0.08)", border: "1.5px solid rgba(56,189,248,0.3)" }}>
           <MapPin size={16} className="text-blue-300 shrink-0" />
-          <input
-            value={locationText}
-            onChange={(e) => { setLocationText(e.target.value); setLat(null); setLng(null); }}
-            placeholder={t("step4.manual_placeholder")}
-            className="flex-1 bg-transparent text-sm text-white outline-none placeholder:text-blue-400"
-          />
+          <select
+            value={province}
+            onChange={(e) => setProvince(e.target.value)}
+            className="flex-1 bg-transparent text-sm text-white outline-none py-3"
+            style={{ color: province ? "white" : "#60a5fa" }}
+          >
+            <option value="" style={{ background: "#1e3a5f" }}>เลือกจังหวัด</option>
+            {PROVINCES.map((p) => <option key={p} value={p} style={{ background: "#1e3a5f" }}>{p}</option>)}
+          </select>
         </div>
       </div>
 
@@ -93,7 +82,7 @@ export default function Step4Page() {
         <button onClick={() => router.back()} className="flex-1 rounded-2xl py-4 text-sm font-semibold flex items-center justify-center gap-1" style={{ background: "rgba(255,255,255,0.07)", border: "1.5px solid rgba(255,255,255,0.15)", color: "#93c5fd" }}>
           <ChevronLeft size={16} />{t("back")}
         </button>
-        <button onClick={handleFinish} disabled={!locationText.trim() || loading}
+        <button onClick={handleFinish} disabled={!province || loading}
           className="flex-[2] rounded-2xl py-4 font-bold text-white flex items-center justify-center gap-2 disabled:opacity-30"
           style={{ background: "linear-gradient(135deg, #0ea5e9, #0369a1)" }}>
           {loading ? "..." : "🎉 " + t("finish")}

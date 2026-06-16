@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Star, MapPin, Building2, LogOut, ChevronRight } from "lucide-react";
+import { Star, MapPin, Building2, LogOut, ChevronRight, Pencil } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import BottomNav from "@/components/ui/BottomNav";
 import type { EmployerProfile } from "@/lib/types";
@@ -35,7 +35,14 @@ export default function EmployerProfilePage() {
     <div className="min-h-screen pb-24" style={{ background: BG }}>
       {/* Header */}
       <div className="px-5 pt-12 pb-6" style={{ background: "rgba(15,23,42,0.85)", backdropFilter: "blur(20px)", borderBottom: "1px solid rgba(56,189,248,0.15)" }}>
-        <h1 className="text-xl font-black text-white mb-5">โปรไฟล์</h1>
+        <div className="flex items-center justify-between mb-5">
+          <h1 className="text-xl font-black text-white">โปรไฟล์</h1>
+          <button onClick={() => router.push(`/${locale}/employer/edit-profile`)}
+            className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full"
+            style={{ background: "rgba(56,189,248,0.15)", border: "1px solid rgba(56,189,248,0.3)", color: "#38bdf8" }}>
+            <Pencil size={12} /> แก้ไข
+          </button>
+        </div>
 
         {/* Avatar + name */}
         <div className="flex items-center gap-4">
