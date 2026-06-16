@@ -11,6 +11,18 @@ const DAY_TH = ["อา","จ","อ","พ","พฤ","ศ","ส"];
 const DAY_EN = ["Su","Mo","Tu","We","Th","Fr","Sa"];
 const BG = "linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%)";
 
+const PROVINCES = [
+  "กรุงเทพมหานคร","กระบี่","กาญจนบุรี","กาฬสินธุ์","กำแพงเพชร","ขอนแก่น","จันทบุรี","ฉะเชิงเทรา",
+  "ชลบุรี","ชัยนาท","ชัยภูมิ","ชุมพร","เชียงราย","เชียงใหม่","ตรัง","ตราด","ตาก","นครนายก",
+  "นครปฐม","นครพนม","นครราชสีมา","นครศรีธรรมราช","นครสวรรค์","นนทบุรี","นราธิวาส","น่าน",
+  "บึงกาฬ","บุรีรัมย์","ปทุมธานี","ประจวบคีรีขันธ์","ปราจีนบุรี","ปัตตานี","พระนครศรีอยุธยา",
+  "พะเยา","พังงา","พัทลุง","พิจิตร","พิษณุโลก","เพชรบุรี","เพชรบูรณ์","แพร่","ภูเก็ต",
+  "มหาสารคาม","มุกดาหาร","แม่ฮ่องสอน","ยโสธร","ยะลา","ร้อยเอ็ด","ระนอง","ระยอง","ราชบุรี",
+  "ลพบุรี","ลำปาง","ลำพูน","เลย","ศรีสะเกษ","สกลนคร","สงขลา","สตูล","สมุทรปราการ",
+  "สมุทรสงคราม","สมุทรสาคร","สระแก้ว","สระบุรี","สิงห์บุรี","สุโขทัย","สุพรรณบุรี","สุราษฎร์ธานี",
+  "สุรินทร์","หนองคาย","หนองบัวลำภู","อ่างทอง","อำนาจเจริญ","อุดรธานี","อุตรดิตถ์","อุทัยธานี","อุบลราชธานี",
+];
+
 export default function PostJobPage() {
   const t = useTranslations("employer.post_job");
   const { locale } = useParams<{ locale: string }>();
@@ -75,7 +87,10 @@ export default function PostJobPage() {
         </Field>
 
         <Field label={t("location")}>
-          <input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="เช่น สาทร กรุงเทพฯ" required className={inputCls} />
+          <select value={location} onChange={(e) => setLocation(e.target.value)} required className={inputCls}>
+            <option value="" style={{ background: "#1e3a5f" }}>เลือกจังหวัด</option>
+            {PROVINCES.map((p) => <option key={p} value={p} style={{ background: "#1e3a5f" }}>{p}</option>)}
+          </select>
         </Field>
 
         <div className="flex gap-3">
