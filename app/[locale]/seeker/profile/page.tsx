@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
-import { Star, MapPin, Clock, Wrench, Pencil } from "lucide-react";
+import { Star, MapPin, Clock, Wrench, Pencil, LogOut } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import BottomNav from "@/components/ui/BottomNav";
 import ProfileScoreBadge from "@/components/ui/ProfileScoreBadge";
@@ -29,6 +29,12 @@ export default function SeekerProfilePage() {
   }, [locale]);
 
   const dayNames = tOnboard.raw("step3.days") as string[];
+
+  async function handleLogout() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push(`/${locale}/auth/phone`);
+  }
 
   return (
     <div className="min-h-screen pb-24" style={{ background: BG }}>
@@ -103,6 +109,15 @@ export default function SeekerProfilePage() {
             </div>
             <p className="text-sm text-blue-300 mt-1">{profile.location_text}</p>
           </div>
+
+          {/* Logout */}
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center justify-center gap-2 rounded-2xl py-3.5 font-semibold text-sm transition-all active:opacity-80"
+            style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.25)", color: "#f87171" }}>
+            <LogOut size={15} />
+            ออกจากระบบ
+          </button>
         </div>
       )}
 
