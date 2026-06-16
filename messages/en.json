@@ -1,0 +1,179 @@
+{
+  "auth": {
+    "phone": {
+      "title": "Welcome",
+      "subtitle": "Enter your phone number to get started",
+      "label": "Phone Number",
+      "placeholder": "08X-XXX-XXXX",
+      "submit": "Get OTP",
+      "sending": "Sending...",
+      "error_invalid": "Invalid phone number",
+      "error_generic": "Something went wrong, please try again"
+    },
+    "otp": {
+      "title": "Verify",
+      "subtitle": "Enter the 6-digit code sent to",
+      "label": "OTP Code",
+      "submit": "Verify",
+      "verifying": "Verifying...",
+      "resend": "Resend Code",
+      "resend_in": "Resend in {seconds}s",
+      "error_invalid": "Incorrect code",
+      "error_expired": "Code expired, request a new one",
+      "error_generic": "Something went wrong, please try again"
+    }
+  },
+  "roleSelect": {
+    "title": "I'm here as...",
+    "subtitle": "Choose your role to start using TapTap",
+    "employer": "Employer",
+    "employer_desc": "I want to find workers",
+    "worker": "Job Seeker",
+    "worker_desc": "I'm looking for work",
+    "confirm": "Get Started"
+  },
+  "onboarding": {
+    "step": "Step {current} of {total}",
+    "next": "Next",
+    "back": "Back",
+    "finish": "Done",
+    "skip": "Skip for now",
+    "step1": {
+      "title": "Tell us about yourself",
+      "name_label": "Full Name",
+      "name_placeholder": "Your name",
+      "photo_label": "Profile Photo",
+      "photo_hint": "Tap to add a photo",
+      "photo_change": "Change photo"
+    },
+    "step2": {
+      "title": "What are your skills?",
+      "subtitle": "Pick from the list or add your own",
+      "add_placeholder": "Type a skill and press Enter",
+      "popular": "Popular Skills"
+    },
+    "step3": {
+      "title": "When are you available?",
+      "subtitle": "Select the days and times that work for you",
+      "from": "From",
+      "to": "To",
+      "days": ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"]
+    },
+    "step4": {
+      "title": "Where are you based?",
+      "subtitle": "We'll show you the closest jobs first",
+      "use_gps": "Use my current location",
+      "manual_label": "Or type your area",
+      "manual_placeholder": "e.g. Sathorn, Bangkok",
+      "gps_loading": "Detecting location...",
+      "gps_error": "Couldn't detect location, please type it"
+    },
+    "profile_score": "Profile {score}% complete"
+  },
+  "seeker": {
+    "home": {
+      "title": "Jobs for You",
+      "empty": "No jobs in your area yet",
+      "swipe_right": "Interested",
+      "swipe_left": "Skip",
+      "match_title": "It's a Match! 🎉",
+      "match_subtitle": "The employer is interested in your profile",
+      "match_chat": "Start Chatting",
+      "match_later": "Maybe Later"
+    },
+    "card": {
+      "distance": "{km} km",
+      "match": "{pct}% match",
+      "urgent": "Urgent!"
+    }
+  },
+  "employer": {
+    "home": {
+      "title": "Recommended Candidates",
+      "empty": "No candidates in your area yet",
+      "post_job": "Post a Job",
+      "filter": "Filter"
+    },
+    "filter": {
+      "title": "Filter Candidates",
+      "skills": "Skills",
+      "availability": "Availability",
+      "distance": "Distance (km)",
+      "min_rating": "Min Rating",
+      "apply": "Apply Filters",
+      "reset": "Reset"
+    },
+    "post_job": {
+      "title": "Post a New Job",
+      "job_title": "Job Title",
+      "job_title_placeholder": "e.g. Waiter, Cashier",
+      "description": "Job Description",
+      "description_placeholder": "Describe the role and responsibilities...",
+      "location": "Work Location",
+      "pay_amount": "Pay Rate",
+      "pay_type": "Pay Type",
+      "pay_types": {
+        "hourly": "Per Hour",
+        "daily": "Per Day",
+        "monthly": "Per Month",
+        "fixed": "Fixed Price"
+      },
+      "schedule": "Schedule",
+      "skills_needed": "Skills Required",
+      "urgent": "Urgent Hire",
+      "urgent_hint": "Shows 'Urgent!' badge on the card",
+      "submit": "Post Job",
+      "submitting": "Posting..."
+    }
+  },
+  "chat": {
+    "title": "Messages",
+    "placeholder": "Type a message...",
+    "send": "Send",
+    "typing": "typing...",
+    "schedule_interview": "Schedule Interview",
+    "accept_job": "Accept Job",
+    "send_resume": "Send Resume",
+    "empty": "Say hi and start the conversation!"
+  },
+  "ai": {
+    "resume": {
+      "title": "Resume Analysis",
+      "score": "Score",
+      "strengths": "Strengths",
+      "improvements": "Areas to Improve",
+      "analyzing": "Analyzing..."
+    },
+    "assistant": {
+      "title": "TapTap AI",
+      "placeholder": "Ask me anything, e.g. help me write a cover letter",
+      "suggestions": [
+        "Help me prep for an interview",
+        "Write a cover letter for me",
+        "Suggest jobs that suit me"
+      ]
+    }
+  },
+  "rating": {
+    "title": "Rate Your Experience",
+    "subtitle": "Your feedback helps others make better decisions",
+    "comment_placeholder": "Tell us how it went...",
+    "submit": "Submit Rating",
+    "skip": "Skip for now"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Something went wrong",
+    "retry": "Try Again",
+    "save": "Save",
+    "cancel": "Cancel",
+    "close": "Close",
+    "baht": "THB"
+  },
+  "nav": {
+    "home": "Home",
+    "matches": "Matches",
+    "chat": "Messages",
+    "profile": "Profile"
+  }
+}
