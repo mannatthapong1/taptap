@@ -7,6 +7,7 @@ import { Star, MapPin, Clock, Wrench, Pencil, LogOut } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import BottomNav from "@/components/ui/BottomNav";
 import ProfileScoreBadge from "@/components/ui/ProfileScoreBadge";
+import DeleteAccountButton from "@/components/ui/DeleteAccountButton";
 import type { SeekerProfile } from "@/lib/types";
 
 const BG = "linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%)";
@@ -117,6 +118,8 @@ export default function SeekerProfilePage() {
             <LogOut size={15} />
             ออกจากระบบ
           </button>
+
+          <DeleteAccountButton />
         </div>
       )}
 

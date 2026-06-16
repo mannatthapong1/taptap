@@ -26,12 +26,10 @@ export default function CallbackPage() {
           router.replace(`/${locale}/onboarding/seeker/step1`);
         }
       } else if (role === "employer") {
-        const { data: employer } = await supabase.from("employer_profiles").select("name").eq("user_id", user.id).single();
-        if (employer?.name) {
-          router.replace(`/${locale}/employer/home`);
-        } else {
-          router.replace(`/${locale}/role-select`);
-        }
+        // Employer has no required onboarding — go straight to home.
+        // Make sure a profile row exists so the rest of the app works.
+        await supabase.from("employer_profiles").upsert({ user_id: user.id }, { onConflict: "user_id", ignoreDuplicates: true });
+        router.replace(`/${locale}/employer/home`);
       } else {
         router.replace(`/${locale}/role-select`);
       }

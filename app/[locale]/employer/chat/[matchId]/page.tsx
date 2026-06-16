@@ -26,7 +26,7 @@ export default function EmployerChatPage() {
 
   useEffect(() => {
     const supabase = createClient();
-    supabase.from("matches").select("*, seeker_profiles(name, user_id), jobs(title)").eq("id", matchId).single()
+    supabase.from("matches").select("*, seeker:seeker_profiles(name, user_id), job:jobs(title)").eq("id", matchId).single()
       .then(({ data }) => {
         setMatchData(data as Match);
         if (data?.status === "completed" && !data?.employer_rated) setShowRating(true);

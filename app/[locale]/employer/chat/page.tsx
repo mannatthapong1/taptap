@@ -22,7 +22,7 @@ export default function EmployerChatListPage() {
       const { data: employer } = await supabase.from("employer_profiles").select("id").eq("user_id", user.id).single();
       if (!employer) return;
       const { data } = await supabase.from("matches")
-        .select("*, jobs(title), seeker_profiles(name, photo_url)")
+        .select("*, job:jobs(title), seeker:seeker_profiles(name, photo_url)")
         .eq("employer_id", employer.id)
         .order("created_at", { ascending: false });
       setMatches((data as Match[]) ?? []);

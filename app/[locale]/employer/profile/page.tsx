@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { Star, MapPin, Building2, LogOut, ChevronRight, Pencil } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import BottomNav from "@/components/ui/BottomNav";
+import DeleteAccountButton from "@/components/ui/DeleteAccountButton";
 import type { EmployerProfile } from "@/lib/types";
 
 const BG = "linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%)";
@@ -104,6 +105,8 @@ export default function EmployerProfilePage() {
           <LogOut size={15} />
           ออกจากระบบ
         </button>
+
+        <DeleteAccountButton />
       </div>
 
       <BottomNav role="employer" />

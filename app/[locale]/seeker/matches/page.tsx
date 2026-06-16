@@ -22,7 +22,7 @@ export default function SeekerMatchesPage() {
       if (!user) return;
       const { data: seeker } = await supabase.from("seeker_profiles").select("id").eq("user_id", user.id).single();
       if (!seeker) return;
-      const { data } = await supabase.from("matches").select("*, jobs(title, pay_amount, pay_type), employer_profiles(name, company_name)").eq("seeker_id", seeker.id).order("created_at", { ascending: false });
+      const { data } = await supabase.from("matches").select("*, job:jobs(title, pay_amount, pay_type), employer:employer_profiles(name, company_name)").eq("seeker_id", seeker.id).order("created_at", { ascending: false });
       setMatches((data as Match[]) ?? []);
     });
   }, []);
