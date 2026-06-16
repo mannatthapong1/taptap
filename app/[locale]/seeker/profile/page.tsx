@@ -50,11 +50,14 @@ export default function SeekerProfilePage() {
         </div>
         {profile && (
           <div className="flex items-center gap-4">
-            <div className="relative h-16 w-16 rounded-2xl overflow-hidden shrink-0" style={{ border: "2px solid rgba(56,189,248,0.4)" }}>
-              {profile.photo_url
-                ? <img src={profile.photo_url} alt={profile.name} className="h-full w-full object-cover" />
-                : <div className="flex h-full w-full items-center justify-center text-2xl font-black text-white" style={{ background: "linear-gradient(135deg, #0ea5e9, #0369a1)" }}>{profile.name[0]}</div>
-              }
+            <div className="relative h-16 w-16 rounded-2xl overflow-hidden shrink-0 flex items-center justify-center text-2xl font-black text-white"
+              style={{ border: "2px solid rgba(56,189,248,0.4)", background: "linear-gradient(135deg, #0ea5e9, #0369a1)" }}>
+              <span>{profile.name?.[0] ?? "?"}</span>
+              {profile.photo_url && (
+                <img src={profile.photo_url} alt={profile.name}
+                  className="absolute inset-0 h-full w-full object-cover"
+                  onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+              )}
             </div>
             <div>
               <p className="font-black text-white text-lg">{profile.name}</p>

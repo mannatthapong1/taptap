@@ -39,9 +39,11 @@ export default function Step1Page() {
     if (photoFile) {
       const ext = photoFile.name.split(".").pop();
       const path = `${user.id}/avatar.${ext}`;
-      await supabase.storage.from("avatars").upload(path, photoFile, { upsert: true });
-      const { data } = supabase.storage.from("avatars").getPublicUrl(path);
-      photo_url = data.publicUrl;
+      const { error: upErr } = await supabase.storage.from("avatars").upload(path, photoFile, { upsert: true });
+      if (!upErr) {
+        const { data } = supabase.storage.from("avatars").getPublicUrl(path);
+        photo_url = `${data.publicUrl}?t=${Date.now()}`;
+      }
     }
 
     await supabase.from("seeker_profiles").upsert({
