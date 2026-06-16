@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { useParams } from "next/navigation";
-import { SlidersHorizontal, Sparkles, X } from "lucide-react";
+import { useParams, useRouter } from "next/navigation";
+import { SlidersHorizontal, Sparkles, X, FileText } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import SwipeStack from "@/components/swipe/SwipeStack";
 import JobCard from "@/components/swipe/JobCard";
@@ -26,6 +26,7 @@ const PROVINCES = [
 export default function SeekerHomePage() {
   const t = useTranslations("seeker.home");
   const { locale } = useParams<{ locale: string }>();
+  const router = useRouter();
   const [jobs, setJobs] = useState<JobCardData[]>([]);
   const [loading, setLoading] = useState(true);
   const [match, setMatch] = useState<{ matchId: string; jobTitle: string } | null>(null);
@@ -95,6 +96,20 @@ export default function SeekerHomePage() {
             : { background: "rgba(56,189,248,0.15)", border: "1px solid rgba(56,189,248,0.3)", color: "#38bdf8" }}>
           <SlidersHorizontal size={13} />
           {selectedProvince || "กรอง"}
+        </button>
+      </div>
+
+      {/* AI tools toolbar */}
+      <div className="flex gap-2 px-4 py-3">
+        <button onClick={() => router.push(`/${locale}/seeker/ai-chat`)}
+          className="flex-1 flex items-center justify-center gap-2 rounded-2xl py-2.5 text-sm font-bold transition-all active:opacity-80"
+          style={{ background: "linear-gradient(135deg, rgba(139,92,246,0.25), rgba(14,165,233,0.25))", border: "1px solid rgba(139,92,246,0.4)", color: "#c4b5fd" }}>
+          <Sparkles size={15} /> AI Advisor
+        </button>
+        <button onClick={() => router.push(`/${locale}/seeker/resume`)}
+          className="flex-1 flex items-center justify-center gap-2 rounded-2xl py-2.5 text-sm font-bold transition-all active:opacity-80"
+          style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(56,189,248,0.3)", color: "#7dd3fc" }}>
+          <FileText size={15} /> Resume
         </button>
       </div>
 
