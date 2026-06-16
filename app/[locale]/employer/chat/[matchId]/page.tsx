@@ -7,6 +7,7 @@ import { ArrowLeft, Send } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useChat } from "@/lib/hooks/useChat";
 import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
+import { markChatSeen } from "@/lib/hooks/useUnreadMessages";
 import ChatBubble from "@/components/chat/ChatBubble";
 import TypingIndicator from "@/components/chat/TypingIndicator";
 import QuickActions from "@/components/chat/QuickActions";
@@ -34,6 +35,9 @@ export default function EmployerChatPage() {
   }, [matchId]);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, typingUsers]);
+
+  // Clear unread badge whenever messages update while viewing this chat
+  useEffect(() => { markChatSeen(); }, [messages]);
 
   async function handleSend() {
     const trimmed = text.trim();

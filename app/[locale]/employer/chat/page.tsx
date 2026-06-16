@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { MessageCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import BottomNav from "@/components/ui/BottomNav";
+import { markChatSeen } from "@/lib/hooks/useUnreadMessages";
 import type { Match } from "@/lib/types";
 
 const BG = "linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%)";
@@ -16,6 +17,7 @@ export default function EmployerChatListPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    markChatSeen();
     const supabase = createClient();
     supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) return;
