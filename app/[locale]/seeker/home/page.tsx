@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useParams } from "next/navigation";
-import { SlidersHorizontal, Sparkles } from "lucide-react";
+import { SlidersHorizontal, Sparkles, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import SwipeStack from "@/components/swipe/SwipeStack";
 import JobCard from "@/components/swipe/JobCard";
@@ -11,12 +11,26 @@ import MatchScreen from "@/components/swipe/MatchScreen";
 import BottomNav from "@/components/ui/BottomNav";
 import type { JobCardData, Match } from "@/lib/types";
 
+const PROVINCES = [
+  "กรุงเทพมหานคร","กระบี่","กาญจนบุรี","กาฬสินธุ์","กำแพงเพชร","ขอนแก่น","จันทบุรี","ฉะเชิงเทรา",
+  "ชลบุรี","ชัยนาท","ชัยภูมิ","ชุมพร","เชียงราย","เชียงใหม่","ตรัง","ตราด","ตาก","นครนายก",
+  "นครปฐม","นครพนม","นครราชสีมา","นครศรีธรรมราช","นครสวรรค์","นนทบุรี","นราธิวาส","น่าน",
+  "บึงกาฬ","บุรีรัมย์","ปทุมธานี","ประจวบคีรีขันธ์","ปราจีนบุรี","ปัตตานี","พระนครศรีอยุธยา",
+  "พะเยา","พังงา","พัทลุง","พิจิตร","พิษณุโลก","เพชรบุรี","เพชรบูรณ์","แพร่","ภูเก็ต",
+  "มหาสารคาม","มุกดาหาร","แม่ฮ่องสอน","ยโสธร","ยะลา","ร้อยเอ็ด","ระนอง","ระยอง","ราชบุรี",
+  "ลพบุรี","ลำปาง","ลำพูน","เลย","ศรีสะเกษ","สกลนคร","สงขลา","สตูล","สมุทรปราการ",
+  "สมุทรสงคราม","สมุทรสาคร","สระแก้ว","สระบุรี","สิงห์บุรี","สุโขทัย","สุพรรณบุรี","สุราษฎร์ธานี",
+  "สุรินทร์","หนองคาย","หนองบัวลำภู","อ่างทอง","อำนาจเจริญ","อุดรธานี","อุตรดิตถ์","อุทัยธานี","อุบลราชธานี",
+];
+
 export default function SeekerHomePage() {
   const t = useTranslations("seeker.home");
   const { locale } = useParams<{ locale: string }>();
   const [jobs, setJobs] = useState<JobCardData[]>([]);
   const [loading, setLoading] = useState(true);
   const [match, setMatch] = useState<{ matchId: string; jobTitle: string } | null>(null);
+  const [showFilter, setShowFilter] = useState(false);
+  const [selectedProvince, setSelectedProvince] = useState("");
 
   useEffect(() => {
     async function load() {
@@ -28,6 +42,7 @@ export default function SeekerHomePage() {
       const swipedIds = swiped?.map((s) => s.target_id) ?? [];
       let query = supabase.from("jobs").select("*, employer_profiles(*)").eq("active", true);
       if (swipedIds.length > 0) query = query.not("id", "in", `(${swipedIds.join(",")})`);
+      if (selectedProvince) query = query.ilike("location_text", `%${selectedProvince}%`);
       const { data: rawJobs } = await query.limit(20);
       const seekerSkills = seeker?.skills ?? [];
       const enriched: JobCardData[] = (rawJobs ?? []).map((j) => ({
@@ -40,7 +55,7 @@ export default function SeekerHomePage() {
       setLoading(false);
     }
     load();
-  }, []);
+  }, [selectedProvince]);
 
   async function handleSwipe(job: JobCardData, direction: "left" | "right" | "save") {
     const res = await fetch("/api/swipe", {
@@ -73,9 +88,13 @@ export default function SeekerHomePage() {
           <Sparkles size={18} className="text-sky-400" />
           <h1 className="text-lg font-black text-white">{t("title")}</h1>
         </div>
-        <button className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full" style={{ background: "rgba(56,189,248,0.15)", border: "1px solid rgba(56,189,248,0.3)", color: "#38bdf8" }}>
+        <button onClick={() => setShowFilter(true)}
+          className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full transition-all"
+          style={selectedProvince
+            ? { background: "rgba(14,165,233,0.3)", border: "1px solid #0ea5e9", color: "white" }
+            : { background: "rgba(56,189,248,0.15)", border: "1px solid rgba(56,189,248,0.3)", color: "#38bdf8" }}>
           <SlidersHorizontal size={13} />
-          กรอง
+          {selectedProvince || "กรอง"}
         </button>
       </div>
 
@@ -90,6 +109,45 @@ export default function SeekerHomePage() {
 
       {match && (
         <MatchScreen matchId={match.matchId} jobTitle={match.jobTitle} onClose={() => setMatch(null)} />
+      )}
+
+      {/* Filter Modal */}
+      {showFilter && (
+        <div className="fixed inset-0 z-50 flex items-end" style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}
+          onClick={() => setShowFilter(false)}>
+          <div className="w-full rounded-t-3xl overflow-hidden" style={{ background: "#0f172a", border: "1px solid rgba(56,189,248,0.2)", maxHeight: "75vh" }}
+            onClick={(e) => e.stopPropagation()}>
+            {/* Modal header */}
+            <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: "1px solid rgba(56,189,248,0.15)" }}>
+              <p className="font-black text-white text-base">กรองตามจังหวัด</p>
+              <button onClick={() => setShowFilter(false)} className="flex h-8 w-8 items-center justify-center rounded-xl" style={{ background: "rgba(255,255,255,0.08)" }}>
+                <X size={16} className="text-white" />
+              </button>
+            </div>
+
+            {/* All provinces */}
+            <div className="overflow-y-auto px-4 py-3 space-y-1" style={{ maxHeight: "calc(75vh - 130px)" }}>
+              <button
+                onClick={() => { setSelectedProvince(""); setShowFilter(false); setLoading(true); }}
+                className="w-full text-left px-4 py-2.5 rounded-xl text-sm font-semibold transition-all"
+                style={!selectedProvince
+                  ? { background: "linear-gradient(135deg, #0ea5e9, #0369a1)", color: "white" }
+                  : { color: "rgba(148,163,184,0.8)" }}>
+                ทั้งหมด (ทุกจังหวัด)
+              </button>
+              {PROVINCES.map((p) => (
+                <button key={p}
+                  onClick={() => { setSelectedProvince(p); setShowFilter(false); setLoading(true); }}
+                  className="w-full text-left px-4 py-2.5 rounded-xl text-sm font-semibold transition-all"
+                  style={selectedProvince === p
+                    ? { background: "linear-gradient(135deg, #0ea5e9, #0369a1)", color: "white" }
+                    : { color: "rgba(148,163,184,0.8)" }}>
+                  {p}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
       )}
 
       <BottomNav role="seeker" />
