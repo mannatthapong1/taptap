@@ -19,11 +19,13 @@ import {
 import {
   CartLine,
   DEFAULT_SETTINGS,
+  Flavor,
   Order,
   PaymentMethod,
   Settings,
   baht,
   dayKey,
+  lineExtras,
   loadOrders,
   loadSettings,
   nextQueueNumber,
@@ -80,7 +82,7 @@ export default function PosApp() {
           <span className="text-3xl">🍟</span>
           <div>
             <h1 className="text-lg font-bold leading-tight">{settings.shopName}</h1>
-            <p className="text-xs opacity-90">ระบบขายหน้าร้าน (POS)</p>
+            <p className="text-xs opacity-90">ชมรมธุรกิจ · ระบบขายหน้าร้าน</p>
           </div>
         </div>
         <div className="shrink-0 whitespace-nowrap text-right">
@@ -157,19 +159,41 @@ function SellView({
 }) {
   const sizes = settings.sizes.filter((s) => s.active);
   const flavors = settings.flavors.filter((f) => f.active);
+  const sauces = settings.sauces.filter((f) => f.active);
   const [sizeId, setSizeId] = useState(sizes[0]?.id ?? "");
+  const [flavorId, setFlavorId] = useState("");
+  const [sauceIds, setSauceIds] = useState<string[]>([]);
+  const [upsize, setUpsize] = useState(false);
+  const [drawing, setDrawing] = useState("");
   const [checkout, setCheckout] = useState(false);
   const [done, setDone] = useState<Order | null>(null);
   const [cartOpen, setCartOpen] = useState(false);
 
   const size = sizes.find((s) => s.id === sizeId) ?? sizes[0];
+  const flavor = flavors.find((f) => f.id === flavorId);
+  const sizeIdx = sizes.findIndex((s) => s.id === size?.id);
+  const upsizeTo = settings.upsizePromo ? sizes[sizeIdx + 1] : undefined;
+  const pickedSauces = sauces.filter((x) => sauceIds.includes(x.id));
+  const itemPrice =
+    (size?.price ?? 0) +
+    (flavor?.extra ?? 0) +
+    pickedSauces.reduce((s, x) => s + x.extra, 0);
   const total = cart.reduce((s, l) => s + l.unitPrice * l.qty, 0);
   const count = cart.reduce((s, l) => s + l.qty, 0);
 
-  const add = (flavorId: string) => {
-    const f = flavors.find((x) => x.id === flavorId);
-    if (!size || !f) return;
-    const key = `${size.id}|${f.id}`;
+  const resetItem = () => {
+    setFlavorId("");
+    setSauceIds([]);
+    setUpsize(false);
+    setDrawing("");
+  };
+
+  const add = () => {
+    if (!size || !flavor) return;
+    const served = upsize && upsizeTo ? upsizeTo : size;
+    const sauceNames = pickedSauces.map((x) => x.name);
+    const isUp = served.id !== size.id;
+    const key = [served.id, size.id, flavor.id, sauceIds.slice().sort().join("+"), drawing].join("|");
     const existing = cart.find((l) => l.key === key);
     if (existing) {
       setCart(cart.map((l) => (l.key === key ? { ...l, qty: l.qty + 1 } : l)));
@@ -178,15 +202,20 @@ function SellView({
         ...cart,
         {
           key,
-          sizeId: size.id,
-          sizeName: `${size.name} (${size.label})`,
-          flavorId: f.id,
-          flavorName: f.name,
-          unitPrice: size.price + f.extra,
+          sizeId: served.id,
+          sizeName: `${served.name} (${served.label})`,
+          flavorId: flavor.id,
+          flavorName: flavor.name,
+          sauces: sauceNames,
+          upsized: isUp,
+          paidSizeName: isUp ? size.name : undefined,
+          drawing,
+          unitPrice: itemPrice,
           qty: 1,
         },
       ]);
     }
+    resetItem();
   };
 
   const changeQty = (key: string, delta: number) =>
@@ -242,7 +271,10 @@ function SellView({
             {sizes.map((s) => (
               <button
                 key={s.id}
-                onClick={() => setSizeId(s.id)}
+                onClick={() => {
+                  setSizeId(s.id);
+                  setUpsize(false);
+                }}
                 className={`rounded-2xl border-2 p-3 text-center transition active:scale-95 ${
                   size?.id === s.id
                     ? "border-orange-500 bg-orange-500 text-white shadow-lg"
@@ -258,41 +290,115 @@ function SellView({
         </div>
 
         <div>
-          <h2 className="mb-2 font-bold text-gray-700">
-            2. แตะผงเขย่าเพื่อเพิ่มลงตะกร้า{" "}
-            <span className="font-normal text-orange-600">
-              (ขนาด {size?.name})
-            </span>
-          </h2>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
-            {flavors.map((f) => {
-              const inCart = cart
-                .filter((l) => l.flavorId === f.id && l.sizeId === size?.id)
-                .reduce((s, l) => s + l.qty, 0);
-              return (
-                <button
-                  key={f.id}
-                  onClick={() => add(f.id)}
-                  className="relative rounded-2xl border-2 border-amber-200 bg-white p-4 text-center shadow-sm transition hover:border-orange-400 active:scale-95 active:bg-orange-50"
-                >
-                  {inCart > 0 && (
-                    <span className="absolute right-2 top-2 flex h-6 min-w-6 items-center justify-center rounded-full bg-orange-500 px-1.5 text-xs font-bold text-white">
-                      {inCart}
-                    </span>
-                  )}
-                  <div className="text-3xl">{f.emoji}</div>
-                  <div className="mt-1 font-semibold">{f.name}</div>
-                  <div className="text-sm text-gray-500">
-                    {baht((size?.price ?? 0) + f.extra)}
-                    {f.extra > 0 && (
-                      <span className="text-orange-600"> (+{f.extra})</span>
-                    )}
-                  </div>
-                </button>
-              );
-            })}
+          <h2 className="mb-2 font-bold text-gray-700">2. เลือกรสชาติ</h2>
+          <div className="grid grid-cols-3 gap-3">
+            {flavors.map((f) => (
+              <button
+                key={f.id}
+                onClick={() => setFlavorId(f.id)}
+                className={`rounded-2xl border-2 p-3 text-center transition active:scale-95 ${
+                  flavorId === f.id
+                    ? "border-orange-500 bg-orange-50 ring-2 ring-orange-300"
+                    : "border-amber-200 bg-white hover:border-orange-300"
+                }`}
+              >
+                <div className="text-3xl">{f.emoji}</div>
+                <div className="mt-1 font-semibold">{f.name}</div>
+                {f.extra > 0 && (
+                  <div className="text-sm text-orange-600">+{baht(f.extra)}</div>
+                )}
+              </button>
+            ))}
           </div>
         </div>
+
+        {sauces.length > 0 && (
+          <div>
+            <h2 className="mb-2 font-bold text-gray-700">
+              3. เลือกซอส{" "}
+              <span className="font-normal text-gray-500">(เลือกได้หลายอย่าง)</span>
+            </h2>
+            <div className="flex flex-wrap gap-2">
+              {sauces.map((x) => {
+                const on = sauceIds.includes(x.id);
+                return (
+                  <button
+                    key={x.id}
+                    onClick={() =>
+                      setSauceIds(
+                        on ? sauceIds.filter((i) => i !== x.id) : [...sauceIds, x.id]
+                      )
+                    }
+                    className={`rounded-full border-2 px-4 py-2 font-medium transition active:scale-95 ${
+                      on
+                        ? "border-red-500 bg-red-500 text-white"
+                        : "border-amber-200 bg-white"
+                    }`}
+                  >
+                    {x.emoji} {x.name}{" "}
+                    <span className={on ? "text-white/80" : "text-green-600"}>
+                      {x.extra > 0 ? `+${x.extra}` : "ฟรี"}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {(upsizeTo || settings.drawings.length > 0) && (
+          <div className="space-y-3 rounded-2xl border-2 border-dashed border-purple-300 bg-purple-50 p-4">
+            <h2 className="font-bold text-purple-700">4. โปรโมชัน (ถ้าลูกค้าทำ)</h2>
+            {upsizeTo && (
+              <label className="flex cursor-pointer items-center gap-3 rounded-xl bg-white p-3">
+                <input
+                  type="checkbox"
+                  className="h-5 w-5 accent-purple-600"
+                  checked={upsize}
+                  onChange={(e) => setUpsize(e.target.checked)}
+                />
+                <span>
+                  <b>โปร 1:</b> กดติดตาม IG → อัปไซซ์ฟรี{" "}
+                  <span className="text-purple-700">
+                    ({size?.name} → {upsizeTo.name} จ่าย {baht(size?.price ?? 0)})
+                  </span>
+                </span>
+              </label>
+            )}
+            {settings.drawings.length > 0 && (
+              <div className="rounded-xl bg-white p-3">
+                <p className="mb-2">
+                  <b>โปร 2:</b> ลงสตอรี่แท็ก IG {settings.igHandle} → วาดซอสเป็นรูป
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {settings.drawings.map((d, i) => (
+                    <button
+                      key={d}
+                      onClick={() => setDrawing(drawing === d ? "" : d)}
+                      className={`rounded-full border px-3 py-1.5 text-sm transition active:scale-95 ${
+                        drawing === d
+                          ? "border-purple-600 bg-purple-600 text-white"
+                          : "border-purple-200 bg-white"
+                      }`}
+                    >
+                      {i + 1}. {d}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        <button
+          disabled={!flavor}
+          onClick={add}
+          className="w-full rounded-2xl bg-orange-500 py-4 text-lg font-bold text-white shadow-lg transition active:scale-[0.98] disabled:bg-gray-300 disabled:shadow-none"
+        >
+          {flavor
+            ? `+ เพิ่ม ${upsize && upsizeTo ? upsizeTo.name : size?.name} ${flavor.name} ลงตะกร้า · ${baht(itemPrice)}`
+            : "เลือกรสชาติก่อน"}
+        </button>
       </section>
 
       {/* ตะกร้า: ด้านข้างบนจอใหญ่ */}
@@ -337,11 +443,14 @@ function SellView({
             </p>
             <div className="rounded-xl bg-gray-50 p-3 text-left text-sm">
               {done.lines.map((l) => (
-                <div key={l.key} className="flex justify-between">
-                  <span>
-                    {l.sizeName} {l.flavorName} × {l.qty}
-                  </span>
-                  <span>{baht(l.unitPrice * l.qty)}</span>
+                <div key={l.key} className="mb-1">
+                  <div className="flex justify-between">
+                    <span>
+                      {l.sizeName} {l.flavorName} × {l.qty}
+                    </span>
+                    <span>{baht(l.unitPrice * l.qty)}</span>
+                  </div>
+                  <p className="text-xs text-gray-500">{lineExtras(l).join(" · ")}</p>
                 </div>
               ))}
               <div className="mt-2 flex justify-between border-t pt-2 font-bold">
@@ -411,6 +520,9 @@ function CartPanel({
                   {l.flavorName}{" "}
                   <span className="text-sm text-gray-500">{l.sizeName}</span>
                 </p>
+                {lineExtras(l).map((t) => (
+                  <p key={t} className="text-xs text-gray-500">{t}</p>
+                ))}
                 <p className="text-sm text-gray-500">{baht(l.unitPrice)} / ถุง</p>
               </div>
               <button
@@ -651,6 +763,7 @@ function HistoryView({
             {o.lines.map((l) => (
               <li key={l.key}>
                 • {l.sizeName} {l.flavorName} × {l.qty}
+                <span className="text-xs text-gray-400"> ({lineExtras(l).join(" · ")})</span>
               </li>
             ))}
           </ul>
@@ -697,8 +810,14 @@ function SummaryView({ orders }: { orders: Order[] }) {
 
   const bySize = new Map<string, { qty: number; amount: number }>();
   const byFlavor = new Map<string, { qty: number; amount: number }>();
+  const bySauce = new Map<string, number>();
+  const byDrawing = new Map<string, number>();
+  let upsized = 0;
   for (const o of list) {
     for (const l of o.lines) {
+      for (const sc of l.sauces ?? []) bySauce.set(sc, (bySauce.get(sc) ?? 0) + l.qty);
+      if (l.drawing) byDrawing.set(l.drawing, (byDrawing.get(l.drawing) ?? 0) + l.qty);
+      if (l.upsized) upsized += l.qty;
       const s = bySize.get(l.sizeName) ?? { qty: 0, amount: 0 };
       s.qty += l.qty;
       s.amount += l.qty * l.unitPrice;
@@ -754,16 +873,33 @@ function SummaryView({ orders }: { orders: Order[] }) {
         />
         <Stat label="เงินสด" value={baht(cash)} />
         <Stat label="โอน/พร้อมเพย์" value={baht(transfer)} />
+        <Stat label="🎁 ใช้โปรอัปไซซ์" value={`${upsized} ถุง`} />
+        <Stat
+          label="🎨 ใช้โปรวาดซอส"
+          value={`${[...byDrawing.values()].reduce((a, b) => a + b, 0)} ถุง`}
+        />
       </div>
 
       <Breakdown
-        title="ตามขนาด"
+        title="ตามขนาด (ถุงที่ใช้จริง รวมอัปไซซ์)"
         rows={[...bySize.entries()].map(([name, v]) => ({ name, ...v }))}
       />
       <Breakdown
         title="ตามรสชาติ (ขายดี)"
         rows={[...byFlavor.entries()]
           .map(([name, v]) => ({ name, ...v }))
+          .sort((a, b) => b.qty - a.qty)}
+      />
+      <Breakdown
+        title="ซอสที่ใช้ (นับถุง — ไว้เช็กสต็อก)"
+        rows={[...bySauce.entries()]
+          .map(([name, qty]) => ({ name, qty }))
+          .sort((a, b) => b.qty - a.qty)}
+      />
+      <Breakdown
+        title="รูปวาดซอสยอดฮิต (โปร 2)"
+        rows={[...byDrawing.entries()]
+          .map(([name, qty]) => ({ name, qty }))
           .sort((a, b) => b.qty - a.qty)}
       />
 
@@ -795,7 +931,7 @@ function Breakdown({
   rows,
 }: {
   title: string;
-  rows: { name: string; qty: number; amount: number }[];
+  rows: { name: string; qty: number; amount?: number }[];
 }) {
   const max = Math.max(1, ...rows.map((r) => r.qty));
   return (
@@ -810,7 +946,7 @@ function Breakdown({
               <div className="flex justify-between text-sm">
                 <span>{r.name}</span>
                 <span className="text-gray-600">
-                  {r.qty} ถุง · {baht(r.amount)}
+                  {r.qty} ถุง{r.amount !== undefined && ` · ${baht(r.amount)}`}
                 </span>
               </div>
               <div className="mt-1 h-2 rounded-full bg-amber-100">
@@ -829,6 +965,10 @@ function Breakdown({
 
 /* ------------------------------ ตั้งค่า ------------------------------ */
 
+const input =
+  "rounded-lg border border-gray-300 bg-white px-2 py-1.5 outline-none focus:border-orange-400";
+
+
 function SettingsView({
   settings,
   updateSettings,
@@ -838,7 +978,7 @@ function SettingsView({
   updateSettings: (s: Settings) => void;
   clearOrders: () => void;
 }) {
-  const [newFlavor, setNewFlavor] = useState({ name: "", emoji: "🍟", extra: "0" });
+  const [newDrawing, setNewDrawing] = useState("");
   const [newSize, setNewSize] = useState({ name: "", label: "", price: "" });
 
   const setSize = (id: string, patch: Partial<Settings["sizes"][number]>) =>
@@ -846,14 +986,7 @@ function SettingsView({
       ...settings,
       sizes: settings.sizes.map((s) => (s.id === id ? { ...s, ...patch } : s)),
     });
-  const setFlavor = (id: string, patch: Partial<Settings["flavors"][number]>) =>
-    updateSettings({
-      ...settings,
-      flavors: settings.flavors.map((f) => (f.id === id ? { ...f, ...patch } : f)),
-    });
 
-  const input =
-    "rounded-lg border border-gray-300 bg-white px-2 py-1.5 outline-none focus:border-orange-400";
 
   return (
     <div className="mx-auto max-w-3xl space-y-4 p-4">
@@ -962,86 +1095,80 @@ function SettingsView({
         </div>
       </section>
 
-      <section className="rounded-2xl bg-white p-4 shadow-sm">
-        <h3 className="mb-1 font-bold">รสชาติผงเขย่า</h3>
-        <p className="mb-3 text-xs text-gray-500">ช่องตัวเลข = ราคาบวกเพิ่มจากราคาขนาด</p>
-        <div className="space-y-2">
-          {settings.flavors.map((f) => (
-            <div key={f.id} className="flex items-center gap-2">
-              <input
-                className={`${input} w-12 text-center`}
-                value={f.emoji}
-                onChange={(e) => setFlavor(f.id, { emoji: e.target.value })}
-              />
-              <input
-                className={`${input} min-w-0 flex-1`}
-                value={f.name}
-                onChange={(e) => setFlavor(f.id, { name: e.target.value })}
-              />
-              <span className="text-sm text-gray-500">+฿</span>
-              <input
-                type="number"
-                className={`${input} w-16 text-right`}
-                value={f.extra}
-                onChange={(e) => setFlavor(f.id, { extra: Number(e.target.value) || 0 })}
-              />
-              <Toggle on={f.active} onChange={(v) => setFlavor(f.id, { active: v })} />
-              <button
-                onClick={() =>
-                  confirm(`ลบรส ${f.name}?`) &&
-                  updateSettings({
-                    ...settings,
-                    flavors: settings.flavors.filter((x) => x.id !== f.id),
-                  })
-                }
-                className="text-gray-400 hover:text-red-500"
-                aria-label="ลบ"
+      <OptionEditor
+        title="รสชาติ (ผงเขย่า)"
+        hint="ช่องตัวเลข = ราคาบวกเพิ่มจากราคาขนาด"
+        items={settings.flavors}
+        onChange={(flavors) => updateSettings({ ...settings, flavors })}
+      />
+      <OptionEditor
+        title="ซอส (เลือกได้หลายอย่าง)"
+        hint="ช่องตัวเลข = ราคาบวกเพิ่ม (0 = ฟรี)"
+        items={settings.sauces}
+        onChange={(sauces) => updateSettings({ ...settings, sauces })}
+      />
+
+      <section className="space-y-3 rounded-2xl bg-white p-4 shadow-sm">
+        <h3 className="font-bold">โปรโมชัน</h3>
+        <label className="flex items-center justify-between gap-3 text-sm">
+          <span>โปร 1: กดติดตาม → อัปไซซ์ฟรี (ขึ้นไปขนาดถัดไป จ่ายราคาเดิม)</span>
+          <Toggle
+            on={settings.upsizePromo}
+            onChange={(v) => updateSettings({ ...settings, upsizePromo: v })}
+          />
+        </label>
+        <label className="block text-sm">
+          ไอจีชมรม (โปร 2: ลงสตอรี่แท็กไอจี)
+          <input
+            className={`${input} mt-1 w-full`}
+            value={settings.igHandle}
+            onChange={(e) => updateSettings({ ...settings, igHandle: e.target.value })}
+          />
+        </label>
+        <div className="text-sm">
+          <p className="mb-2">รูปวาดซอส (โปร 2)</p>
+          <div className="flex flex-wrap gap-2">
+            {settings.drawings.map((d) => (
+              <span
+                key={d}
+                className="flex items-center gap-1 rounded-full bg-purple-100 px-3 py-1 text-purple-800"
               >
-                <Trash2 size={18} />
-              </button>
-            </div>
-          ))}
-        </div>
-        <div className="mt-3 flex items-center gap-2 border-t pt-3">
-          <input
-            className={`${input} w-12 text-center`}
-            value={newFlavor.emoji}
-            onChange={(e) => setNewFlavor({ ...newFlavor, emoji: e.target.value })}
-          />
-          <input
-            className={`${input} min-w-0 flex-1`}
-            placeholder="ชื่อรสใหม่"
-            value={newFlavor.name}
-            onChange={(e) => setNewFlavor({ ...newFlavor, name: e.target.value })}
-          />
-          <input
-            type="number"
-            className={`${input} w-16`}
-            value={newFlavor.extra}
-            onChange={(e) => setNewFlavor({ ...newFlavor, extra: e.target.value })}
-          />
-          <button
-            disabled={!newFlavor.name}
-            onClick={() => {
-              updateSettings({
-                ...settings,
-                flavors: [
-                  ...settings.flavors,
-                  {
-                    id: uid(),
-                    name: newFlavor.name,
-                    emoji: newFlavor.emoji || "🍟",
-                    extra: Number(newFlavor.extra) || 0,
-                    active: true,
-                  },
-                ],
-              });
-              setNewFlavor({ name: "", emoji: "🍟", extra: "0" });
-            }}
-            className="rounded-lg bg-orange-500 px-3 py-1.5 font-semibold text-white disabled:bg-gray-300"
-          >
-            เพิ่ม
-          </button>
+                {d}
+                <button
+                  aria-label={`ลบ ${d}`}
+                  onClick={() =>
+                    updateSettings({
+                      ...settings,
+                      drawings: settings.drawings.filter((x) => x !== d),
+                    })
+                  }
+                >
+                  <X size={14} />
+                </button>
+              </span>
+            ))}
+          </div>
+          <div className="mt-2 flex gap-2">
+            <input
+              className={`${input} min-w-0 flex-1`}
+              placeholder="เพิ่มรูปใหม่ เช่น แมวน้ำ"
+              value={newDrawing}
+              onChange={(e) => setNewDrawing(e.target.value)}
+            />
+            <button
+              disabled={!newDrawing.trim() || settings.drawings.includes(newDrawing.trim())}
+              onClick={() => {
+                updateSettings({
+                  ...settings,
+                  drawings: [...settings.drawings, newDrawing.trim()],
+                });
+                setNewDrawing("");
+              }}
+              className="rounded-lg bg-orange-500 px-3 py-1.5 font-semibold text-white disabled:bg-gray-300"
+            >
+              เพิ่ม
+            </button>
+          </div>
         </div>
       </section>
 
@@ -1066,6 +1193,100 @@ function SettingsView({
         </button>
       </section>
     </div>
+  );
+}
+
+
+function OptionEditor({
+  title,
+  hint,
+  items,
+  onChange,
+}: {
+  title: string;
+  hint: string;
+  items: Flavor[];
+  onChange: (items: Flavor[]) => void;
+}) {
+  const [newFlavor, setNewFlavor] = useState({ name: "", emoji: "🍟", extra: "0" });
+  const setFlavor = (id: string, patch: Partial<Flavor>) =>
+    onChange(items.map((f) => (f.id === id ? { ...f, ...patch } : f)));
+  return (
+  <section className="rounded-2xl bg-white p-4 shadow-sm">
+    <h3 className="mb-1 font-bold">{title}</h3>
+    <p className="mb-3 text-xs text-gray-500">{hint}</p>
+    <div className="space-y-2">
+      {items.map((f) => (
+        <div key={f.id} className="flex items-center gap-2">
+          <input
+            className={`${input} w-12 text-center`}
+            value={f.emoji}
+            onChange={(e) => setFlavor(f.id, { emoji: e.target.value })}
+          />
+          <input
+            className={`${input} min-w-0 flex-1`}
+            value={f.name}
+            onChange={(e) => setFlavor(f.id, { name: e.target.value })}
+          />
+          <span className="text-sm text-gray-500">+฿</span>
+          <input
+            type="number"
+            className={`${input} w-16 text-right`}
+            value={f.extra}
+            onChange={(e) => setFlavor(f.id, { extra: Number(e.target.value) || 0 })}
+          />
+          <Toggle on={f.active} onChange={(v) => setFlavor(f.id, { active: v })} />
+          <button
+            onClick={() =>
+              confirm(`ลบ ${f.name}?`) && onChange(items.filter((x) => x.id !== f.id))
+            }
+            className="text-gray-400 hover:text-red-500"
+            aria-label="ลบ"
+          >
+            <Trash2 size={18} />
+          </button>
+        </div>
+      ))}
+    </div>
+    <div className="mt-3 flex items-center gap-2 border-t pt-3">
+      <input
+        className={`${input} w-12 text-center`}
+        value={newFlavor.emoji}
+        onChange={(e) => setNewFlavor({ ...newFlavor, emoji: e.target.value })}
+      />
+      <input
+        className={`${input} min-w-0 flex-1`}
+        placeholder="เพิ่มใหม่"
+        value={newFlavor.name}
+        onChange={(e) => setNewFlavor({ ...newFlavor, name: e.target.value })}
+      />
+      <input
+        type="number"
+        className={`${input} w-16`}
+        value={newFlavor.extra}
+        onChange={(e) => setNewFlavor({ ...newFlavor, extra: e.target.value })}
+      />
+      <button
+        disabled={!newFlavor.name}
+        onClick={() => {
+          onChange([
+              ...items,
+              {
+                id: uid(),
+                name: newFlavor.name,
+                emoji: newFlavor.emoji || "🍟",
+                extra: Number(newFlavor.extra) || 0,
+                active: true,
+              },
+            ]);
+          setNewFlavor({ name: "", emoji: "🍟", extra: "0" });
+        }}
+        className="rounded-lg bg-orange-500 px-3 py-1.5 font-semibold text-white disabled:bg-gray-300"
+      >
+        เพิ่ม
+      </button>
+    </div>
+  </section>
   );
 }
 

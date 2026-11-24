@@ -13,15 +13,19 @@ export type Flavor = {
   id: string;
   name: string; // เช่น "ชีส"
   emoji: string;
-  extra: number; // ราคาบวกเพิ่ม (0 = ไม่บวก)
+  extra: number; // ราคาบวกเพิ่ม (0 = ไม่บวก / ฟรี)
   active: boolean;
 };
 
 export type Settings = {
   shopName: string;
   promptPayId: string;
+  igHandle: string;
   sizes: Size[];
-  flavors: Flavor[];
+  flavors: Flavor[]; // ผงเขย่า (เลือก 1)
+  sauces: Flavor[]; // ซอส (เลือกได้หลายอย่าง)
+  drawings: string[]; // โปร 2: รูปที่วาดด้วยซอส
+  upsizePromo: boolean; // โปร 1: กดติดตาม อัปไซซ์ฟรี
 };
 
 export type CartLine = {
@@ -30,6 +34,10 @@ export type CartLine = {
   sizeName: string;
   flavorId: string;
   flavorName: string;
+  sauces: string[]; // ชื่อซอสที่เลือก
+  upsized: boolean; // โปร 1: ได้อัปไซซ์ฟรี (sizeName = ขนาดที่ได้รับจริง)
+  paidSizeName?: string; // ขนาดที่จ่ายเงินจริง ถ้าอัปไซซ์
+  drawing: string; // โปร 2: รูปวาดซอส ("" = ไม่มี)
   unitPrice: number;
   qty: number;
 };
@@ -49,27 +57,37 @@ export type Order = {
 };
 
 export const DEFAULT_SETTINGS: Settings = {
-  shopName: "เฟรนช์ฟรายส์เขย่า ชมรมธุรกิจ",
+  shopName: "Fry & Fizz",
   promptPayId: "",
+  igHandle: "Businessclub.space",
   sizes: [
-    { id: "s", name: "S", label: "เล็ก", price: 20, active: true },
-    { id: "m", name: "M", label: "กลาง", price: 30, active: true },
-    { id: "l", name: "L", label: "ใหญ่", price: 40, active: true },
-    { id: "xl", name: "XL", label: "จัมโบ้", price: 59, active: true },
+    { id: "s", name: "S", label: "เล็ก", price: 40, active: true },
+    { id: "m", name: "M", label: "กลาง", price: 50, active: true },
   ],
   flavors: [
     { id: "cheese", name: "ชีส", emoji: "🧀", extra: 0, active: true },
     { id: "bbq", name: "บาร์บีคิว", emoji: "🔥", extra: 0, active: true },
-    { id: "sourcream", name: "ซาวร์ครีม", emoji: "🧅", extra: 0, active: true },
-    { id: "seaweed", name: "สาหร่าย", emoji: "🌿", extra: 0, active: true },
-    { id: "paprika", name: "ปาปริก้า", emoji: "🌶️", extra: 0, active: true },
-    { id: "larb", name: "ลาบ", emoji: "🍃", extra: 0, active: true },
-    { id: "mix", name: "มิกซ์ 2 รส", emoji: "✨", extra: 5, active: true },
-    { id: "plain", name: "เกลือ (ธรรมดา)", emoji: "🧂", extra: 0, active: true },
+    { id: "nori", name: "โนริสาหร่าย", emoji: "🌿", extra: 0, active: true },
   ],
+  sauces: [
+    { id: "ketchup", name: "ซอสมะเขือเทศ", emoji: "🍅", extra: 0, active: true },
+    { id: "mayo", name: "มายองเนส", emoji: "🥚", extra: 0, active: true },
+    { id: "cheese-sauce", name: "ชีส", emoji: "🧀", extra: 0, active: true },
+  ],
+  drawings: [
+    "ดอกไม้",
+    "หัวใจ",
+    "ยิ้ม :)",
+    "ดาว",
+    "ก้นหอย @",
+    "#",
+    "คนซื้อ",
+    "หมา & แมว",
+  ],
+  upsizePromo: true,
 };
 
-const SETTINGS_KEY = "pos-fries:settings";
+const SETTINGS_KEY = "pos-fries:settings:v2";
 const ORDERS_KEY = "pos-fries:orders";
 
 function read<T>(key: string, fallback: T): T {
@@ -89,7 +107,10 @@ function write(key: string, value: unknown) {
   }
 }
 
-export const loadSettings = () => read<Settings>(SETTINGS_KEY, DEFAULT_SETTINGS);
+export const loadSettings = (): Settings => ({
+  ...DEFAULT_SETTINGS,
+  ...read<Partial<Settings>>(SETTINGS_KEY, {}),
+});
 export const saveSettings = (s: Settings) => write(SETTINGS_KEY, s);
 export const loadOrders = () => read<Order[]>(ORDERS_KEY, []);
 export const saveOrders = (o: Order[]) => write(ORDERS_KEY, o);
@@ -113,6 +134,16 @@ export function nextQueueNumber(orders: Order[]): number {
   return todays.reduce((m, o) => Math.max(m, o.number), 0) + 1;
 }
 
+/** คำอธิบายเพิ่มเติมของรายการ เช่น ซอส / โปรโมชัน */
+export function lineExtras(l: CartLine): string[] {
+  const out: string[] = [];
+  if (l.sauces?.length) out.push(`ซอส: ${l.sauces.join(", ")}`);
+  else out.push("ไม่ใส่ซอส");
+  if (l.upsized) out.push(`🎁 อัปไซซ์ฟรี (จ่ายราคา ${l.paidSizeName ?? ""})`);
+  if (l.drawing) out.push(`🎨 วาดซอสรูป${l.drawing}`);
+  return out;
+}
+
 export function ordersToCsv(orders: Order[]): string {
   const header = [
     "เลขคิว",
@@ -128,7 +159,10 @@ export function ordersToCsv(orders: Order[]): string {
   const rows = orders.map((o) => {
     const d = new Date(o.createdAt);
     const items = o.lines
-      .map((l) => `${l.sizeName} ${l.flavorName} x${l.qty}`)
+      .map(
+        (l) =>
+          `${l.sizeName} ${l.flavorName} x${l.qty} [${lineExtras(l).join("; ")}]`
+      )
       .join(" / ");
     return [
       o.number,
